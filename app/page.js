@@ -82,7 +82,7 @@ const Icons = {
 function SimViewer({ sim }) {
   if (!sim) return null;
   if (sim.fileUrl) {
-    return <iframe src={sim.fileUrl} title="Simulation" style={{ width: "100%", height: "100%", minHeight: 550, border: "none", borderRadius: 8, background: "#0a0c12", display: "block" }} allow="fullscreen" />;
+    return <iframe src={`/api/serve?url=${encodeURIComponent(sim.fileUrl)}`} title="Simulation" style={{ width: "100%", height: "100%", minHeight: 550, border: "none", borderRadius: 8, background: "#0a0c12", display: "block" }} allow="fullscreen" />;
   }
   if (sim.htmlFile) {
     return <iframe src={`/${sim.htmlFile}`} title="Simulation" style={{ width: "100%", height: "100%", minHeight: 550, border: "none", borderRadius: 8, background: "#0a0c12", display: "block" }} allow="fullscreen" />;
