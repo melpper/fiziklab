@@ -1,0 +1,767 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KARDEN ÇETİN — X Işını Oluşumu</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { background:#080c1e; overflow:hidden; font-family:'Orbitron',monospace; color:#e0f0ff; }
+#c { display:block; width:100vw; height:100vh; }
+
+#header {
+  position:absolute; top:0; left:0; right:0; height:44px;
+  background:linear-gradient(90deg,#0a0f2a,#0d1535,#0a0f2a);
+  border-bottom:1px solid #00d4ff44;
+  display:flex; align-items:center; justify-content:space-between;
+  padding:0 18px; z-index:100; pointer-events:none;
+}
+#header h1 { font-size:12px; color:#00d4ff; letter-spacing:3px; font-weight:700; }
+#header .sub { font-size:9px; color:#4a9eff88; letter-spacing:2px; }
+
+/* Mode buttons */
+#mode-bar {
+  position:absolute; top:52px; left:50%; transform:translateX(-50%);
+  display:flex; gap:8px; z-index:100;
+}
+.mbtn {
+  padding:6px 14px; border:1px solid; border-radius:4px;
+  font-family:'Orbitron',monospace; font-size:8px; font-weight:700;
+  letter-spacing:1px; cursor:pointer; background:transparent; transition:all 0.2s;
+}
+.mbtn:hover { filter:brightness(1.4); transform:translateY(-1px); }
+.mbtn.active { filter:brightness(1.5); }
+.m-both  { border-color:#00d4ff; color:#00d4ff; }
+.m-brem  { border-color:#00ff99; color:#00ff99; }
+.m-char  { border-color:#ff8c00; color:#ff8c00; }
+.m-both.active  { background:#00d4ff22; box-shadow:0 0 10px #00d4ff55; }
+.m-brem.active  { background:#00ff9922; box-shadow:0 0 10px #00ff9955; }
+.m-char.active  { background:#ff8c0022; box-shadow:0 0 10px #ff8c0055; }
+
+/* Info panel left */
+#info-panel {
+  position:absolute; left:12px; top:90px;
+  width:205px; background:#0a0f2a99;
+  border:1px solid #00d4ff22; border-radius:8px;
+  padding:12px; z-index:100;
+}
+#info-panel h3 { font-size:9px; color:#00d4ff; letter-spacing:2px; margin-bottom:10px; }
+.irow { display:flex; justify-content:space-between; margin-bottom:6px; }
+.ilbl { font-size:8px; color:#4a9eff88; }
+.ival { font-size:9px; color:#e0f0ff; font-weight:700; }
+.divider { height:1px; background:#00d4ff22; margin:8px 0; }
+
+/* Voltage slider */
+#ctrl-panel {
+  position:absolute; left:12px; bottom:55px;
+  width:205px; background:#0a0f2a99;
+  border:1px solid #00d4ff22; border-radius:8px;
+  padding:12px; z-index:100;
+}
+#ctrl-panel h3 { font-size:9px; color:#00d4ff; letter-spacing:2px; margin-bottom:10px; }
+.slider-row { margin-bottom:10px; }
+.slider-lbl { font-size:8px; color:#4a9eff88; margin-bottom:4px; display:flex; justify-content:space-between; }
+.slider-lbl span { color:#e0f0ff; font-weight:700; }
+input[type=range] {
+  width:100%; height:4px; -webkit-appearance:none;
+  background:linear-gradient(90deg,#00d4ff44,#00d4ff88);
+  border-radius:2px; outline:none;
+}
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance:none; width:14px; height:14px;
+  border-radius:50%; background:#00d4ff; cursor:pointer;
+  box-shadow:0 0 8px #00d4ff88;
+}
+
+/* Spectrum panel right */
+#spec-panel {
+  position:absolute; right:12px; top:90px;
+  width:210px; background:#0a0f2a99;
+  border:1px solid #00d4ff22; border-radius:8px;
+  padding:12px; z-index:100;
+}
+#spec-panel h3 { font-size:9px; color:#00d4ff; letter-spacing:2px; margin-bottom:8px; }
+#spec-canvas { display:block; border-radius:4px; }
+
+/* Legend right bottom */
+#legend {
+  position:absolute; right:12px; bottom:55px;
+  width:210px; background:#0a0f2a99;
+  border:1px solid #00d4ff22; border-radius:8px;
+  padding:12px; z-index:100;
+}
+#legend h3 { font-size:9px; color:#00d4ff; letter-spacing:2px; margin-bottom:8px; }
+.leg-row { display:flex; align-items:center; gap:8px; margin-bottom:6px; }
+.leg-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
+.leg-txt { font-size:8px; color:#a0c0e0; line-height:1.3; }
+
+/* Formula */
+#formula {
+  position:absolute; bottom:10px; left:225px; right:230px;
+  background:#0a0f2a99; border:1px solid #00d4ff22; border-radius:6px;
+  padding:7px 14px; text-align:center; z-index:100; pointer-events:none;
+}
+.ftitle { font-size:8px; color:#4a9eff88; letter-spacing:2px; margin-bottom:3px; }
+.ftext  { font-size:10px; color:#e0f0ff; }
+
+#watermark {
+  position:absolute; bottom:4px; right:14px;
+  font-size:8px; color:#ffffff15; letter-spacing:2px; z-index:100; pointer-events:none;
+}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+
+<div id="header">
+  <div>
+    <div class="sub">FİZİK ANİMASYONU — 3D</div>
+    <h1>KARDEN ÇETİN — X IŞINI OLUŞUMU</h1>
+  </div>
+  <div style="text-align:right">
+    <div class="sub">BREMSSTRAHLUNG &amp; KARAKTERİSTİK IŞIMA</div>
+    <div class="sub" style="margin-top:2px;font-size:8px;color:#4a9eff55;">🖱 SÜRÜKLE: DÖNDÜR  |  TEKERLEK: ZOOM</div>
+  </div>
+</div>
+
+<div id="mode-bar">
+  <button class="mbtn m-both active" onclick="setMode('both')">İKİSİ DE</button>
+  <button class="mbtn m-brem"        onclick="setMode('brem')">BREMSSTRAHLUNG</button>
+  <button class="mbtn m-char"        onclick="setMode('char')">KARAKTERİSTİK</button>
+</div>
+
+<div id="info-panel">
+  <h3>OLAY BİLGİSİ</h3>
+  <div class="irow"><span class="ilbl">Olay Türü</span><span class="ival" id="ev-type">—</span></div>
+  <div class="irow"><span class="ilbl">Elektron Enerjisi</span><span class="ival" id="ev-ke">—</span></div>
+  <div class="irow"><span class="ilbl">X-ışını Enerjisi</span><span class="ival" id="ev-xray">—</span></div>
+  <div class="irow"><span class="ilbl">Dalga Boyu (λ)</span><span class="ival" id="ev-wl">—</span></div>
+  <div class="divider"></div>
+  <div class="irow"><span class="ilbl">Hedef Metal</span><span class="ival">Tungsten (W)</span></div>
+  <div class="irow"><span class="ilbl">Atom. No (Z)</span><span class="ival">74</span></div>
+  <div class="irow"><span class="ilbl">K-kabuğu Enerji</span><span class="ival">69.5 keV</span></div>
+  <div class="irow"><span class="ilbl">L-kabuğu Enerji</span><span class="ival">11.5 keV</span></div>
+</div>
+
+<div id="ctrl-panel">
+  <h3>KONTROL</h3>
+  <div class="slider-row">
+    <div class="slider-lbl">Tüp Voltajı <span id="lbl-V">80 kV</span></div>
+    <input type="range" id="sl-V" min="30" max="150" value="80" oninput="onVoltage(this.value)">
+  </div>
+  <div class="slider-row">
+    <div class="slider-lbl">Hız <span id="lbl-spd">Orta</span></div>
+    <input type="range" id="sl-spd" min="1" max="5" value="3" oninput="onSpeed(this.value)">
+  </div>
+</div>
+
+<div id="spec-panel">
+  <h3>X-IŞINI SPEKTRUMU</h3>
+  <canvas id="spec-canvas" width="186" height="110"></canvas>
+</div>
+
+<div id="legend">
+  <h3>AÇIKLAMA</h3>
+  <div class="leg-row"><div class="leg-dot" style="background:#4af"></div><div class="leg-txt">Gelen elektron (katot'tan)</div></div>
+  <div class="leg-row"><div class="leg-dot" style="background:#fa4"></div><div class="leg-txt">Yavaşlayan elektron (Bremsstrahlung)</div></div>
+  <div class="leg-row"><div class="leg-dot" style="background:#0f9"></div><div class="leg-txt">Bremsstrahlung X ışını (sürekli)</div></div>
+  <div class="leg-row"><div class="leg-dot" style="background:#f80"></div><div class="leg-txt">Karakteristik X ışını (K→L geçişi)</div></div>
+  <div class="leg-row"><div class="leg-dot" style="background:#f44"></div><div class="leg-txt">Fırlayan iç kabuk elektronu</div></div>
+</div>
+
+<div id="formula">
+  <div class="ftitle">DUANE–HUNT YASASI &nbsp;|&nbsp; KARAKTERİSTİK ENERJİ</div>
+  <div class="ftext">λ<sub>min</sub> = hc / eV &nbsp;&nbsp;|&nbsp;&nbsp; E<sub>Kα</sub> = E<sub>K</sub> − E<sub>L</sub> = 58.0 keV</div>
+</div>
+
+<div id="watermark">© KARDEN ÇETİN — X IŞINI ANİMASYONU</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+'use strict';
+// ============================================================
+//  GLOBALS
+// ============================================================
+var MODE    = 'both';   // 'both' | 'brem' | 'char'
+var VOLTAGE = 80;       // kV
+var SPD     = 3;        // 1-5
+var frame   = 0;
+
+// ============================================================
+//  THREE.JS SETUP
+// ============================================================
+var canvas = document.getElementById('c');
+var renderer = new THREE.WebGLRenderer({ canvas:canvas, antialias:true, alpha:true });
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+renderer.setClearColor(0x080c1e,1);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+var scene  = new THREE.Scene();
+var camera = new THREE.PerspectiveCamera(50, 1, 0.01, 500);
+
+function doResize() {
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+}
+window.addEventListener('resize', doResize);
+setTimeout(doResize, 30);
+
+// Lighting
+var ambient = new THREE.AmbientLight(0x112244, 1.2);
+scene.add(ambient);
+var pL1 = new THREE.PointLight(0x00d4ff, 1.5, 60); pL1.position.set(0,8,0); scene.add(pL1);
+var pL2 = new THREE.PointLight(0xff6633, 1.0, 40); pL2.position.set(4,2,4); scene.add(pL2);
+var dL  = new THREE.DirectionalLight(0xffffff, 0.6);
+dL.position.set(10,20,10); dL.castShadow = true; scene.add(dL);
+
+// ============================================================
+//  CAMERA ORBIT
+// ============================================================
+var camR=22, camTheta=0.5, camPhi=0.35;
+var mouse={ down:false, x:0, y:0 };
+canvas.addEventListener('mousedown', function(e){ mouse.down=true; mouse.x=e.clientX; mouse.y=e.clientY; });
+canvas.addEventListener('mouseup',   function(){ mouse.down=false; });
+canvas.addEventListener('mousemove', function(e){
+  if(!mouse.down) return;
+  camTheta += (e.clientX-mouse.x)*0.006;
+  camPhi   += (e.clientY-mouse.y)*0.004;
+  camPhi = Math.max(-1.1, Math.min(1.1, camPhi));
+  mouse.x=e.clientX; mouse.y=e.clientY;
+});
+canvas.addEventListener('wheel', function(e){
+  camR = Math.max(8, Math.min(40, camR + e.deltaY*0.03));
+});
+// Touch
+canvas.addEventListener('touchstart', function(e){ mouse.down=true; mouse.x=e.touches[0].clientX; mouse.y=e.touches[0].clientY; });
+canvas.addEventListener('touchend',   function(){ mouse.down=false; });
+canvas.addEventListener('touchmove',  function(e){
+  if(!mouse.down) return;
+  camTheta += (e.touches[0].clientX-mouse.x)*0.006;
+  camPhi   += (e.touches[0].clientY-mouse.y)*0.004;
+  camPhi = Math.max(-1.1, Math.min(1.1, camPhi));
+  mouse.x=e.touches[0].clientX; mouse.y=e.touches[0].clientY;
+});
+
+// ============================================================
+//  SCENE GEOMETRY
+// ============================================================
+
+// ---------- X-RAY TUBE BODY ----------
+function makeTube() {
+  var g = new THREE.Group();
+
+  // Glass envelope (cylinder, hollow feel)
+  var envGeo = new THREE.CylinderGeometry(1.8, 1.8, 14, 32, 1, true);
+  var envMat = new THREE.MeshPhongMaterial({
+    color:0x88ccff, transparent:true, opacity:0.10,
+    side:THREE.DoubleSide, shininess:200
+  });
+  var env = new THREE.Mesh(envGeo, envMat);
+  env.rotation.z = Math.PI/2;
+  g.add(env);
+
+  // End caps
+  function cap(x) {
+    var cg = new THREE.CylinderGeometry(1.8,1.8,0.15,32);
+    var cm = new THREE.MeshPhongMaterial({ color:0x334466, shininess:80 });
+    var c  = new THREE.Mesh(cg, cm);
+    c.rotation.z = Math.PI/2; c.position.x = x;
+    g.add(c);
+  }
+  cap(-7); cap(7);
+
+  // Cathode cup (left)
+  var cathGeo = new THREE.CylinderGeometry(0.9,0.5,1.2,24);
+  var cathMat = new THREE.MeshPhongMaterial({ color:0x556688, emissive:0x112233, shininess:120 });
+  var cath = new THREE.Mesh(cathGeo, cathMat);
+  cath.rotation.z = Math.PI/2; cath.position.x = -5.8;
+  g.add(cath);
+
+  // Filament glow inside cathode
+  var filGeo = new THREE.TorusGeometry(0.35,0.06,8,20);
+  var filMat = new THREE.MeshPhongMaterial({ color:0xff9944, emissive:0xff6600, emissiveIntensity:1.2 });
+  var fil    = new THREE.Mesh(filGeo, filMat);
+  fil.rotation.y = Math.PI/2; fil.position.x = -5.5;
+  g.add(fil);
+
+  // Point light at filament
+  var fLight = new THREE.PointLight(0xff7733, 1.5, 5);
+  fLight.position.x = -5.5;
+  g.add(fLight);
+
+  // Anode (tungsten target) — angled disk
+  var anodGeo = new THREE.CylinderGeometry(1.1,1.1,0.3,32);
+  var anodMat = new THREE.MeshPhongMaterial({ color:0x889aaa, emissive:0x334455, shininess:200 });
+  var anod    = new THREE.Mesh(anodGeo, anodMat);
+  anod.rotation.z = Math.PI/2;
+  anod.rotation.y = Math.PI*0.17; // ~30° tilt
+  anod.position.x = 4.5;
+  g.add(anod);
+
+  // Anode stem
+  var stemGeo = new THREE.CylinderGeometry(0.18,0.18,2.5,12);
+  var stemMat = new THREE.MeshPhongMaterial({ color:0x667788, shininess:100 });
+  var stem    = new THREE.Mesh(stemGeo, stemMat);
+  stem.position.set(5.5, 0, 0);
+  g.add(stem);
+
+  // Window (beryllium exit port)
+  var winGeo = new THREE.CylinderGeometry(0.5,0.5,0.1,20);
+  var winMat = new THREE.MeshPhongMaterial({ color:0xaaccff, transparent:true, opacity:0.4 });
+  var win    = new THREE.Mesh(winGeo, winMat);
+  win.rotation.z = Math.PI/2; win.position.set(4.5, -1.9, 0);
+  g.add(win);
+
+  // Label: KATOT
+  // (label drawn on canvas overlay later)
+
+  scene.add(g);
+  return { group:g, filament:fil, fLight:fLight, anode:anod };
+}
+var TUBE = makeTube();
+
+// ---------- ATOM MODEL at anode surface ----------
+// Simplified: nucleus + 3 orbit rings (K, L, M)
+var atomG = new THREE.Group();
+atomG.position.set(4.5, 0, 0);
+
+// Nucleus
+var nucGeo = new THREE.SphereGeometry(0.28,24,24);
+var nucMat = new THREE.MeshPhongMaterial({ color:0xff6633, emissive:0xff3300, emissiveIntensity:0.7, shininess:150 });
+var nucleus = new THREE.Mesh(nucGeo, nucMat);
+atomG.add(nucleus);
+
+// Orbit shells
+var SHELL_R = { K:0.7, L:1.15, M:1.6 };
+var shellMeshes = {};
+var shellColors = { K:0xaa66ff, L:0xff4466, M:0x4466ff };
+for (var sh in SHELL_R) {
+  var pts=[];
+  for (var i=0; i<=80; i++) {
+    var a=(i/80)*Math.PI*2;
+    pts.push(new THREE.Vector3(Math.cos(a)*SHELL_R[sh],0,Math.sin(a)*SHELL_R[sh]));
+  }
+  var sg = new THREE.BufferGeometry().setFromPoints(pts);
+  var sm = new THREE.LineBasicMaterial({ color:shellColors[sh], transparent:true, opacity:0.4 });
+  var sl = new THREE.Line(sg, sm);
+  atomG.add(sl);
+  shellMeshes[sh] = { line:sl, mat:sm };
+}
+
+// Shell electrons (one each K,L,M)
+var shellElectrons = {};
+var eAngles = { K:0, L:1.0, M:2.5 };
+for (var sh2 in SHELL_R) {
+  var eg2 = new THREE.SphereGeometry(0.07,12,12);
+  var em2 = new THREE.MeshPhongMaterial({ color:0x00d4ff, emissive:0x00aaff, emissiveIntensity:0.9 });
+  var em2mesh = new THREE.Mesh(eg2, em2);
+  atomG.add(em2mesh);
+  shellElectrons[sh2] = em2mesh;
+}
+
+scene.add(atomG);
+atomG.rotation.z = Math.PI*0.08; // slight tilt to match anode angle
+
+// ============================================================
+//  PARTICLE SYSTEMS
+// ============================================================
+var particles = [];  // { type, pos, vel, life, color, size }
+
+// Particle pool (instanced not available in r128 easily, use individual meshes)
+var POOL_SIZE = 120;
+var pool = [];
+(function() {
+  var pg = new THREE.SphereGeometry(0.08,8,8);
+  for (var i=0; i<POOL_SIZE; i++) {
+    var pm = new THREE.MeshBasicMaterial({ color:0xffffff, transparent:true, opacity:0 });
+    var p  = new THREE.Mesh(pg.clone(), pm);
+    scene.add(p);
+    pool.push({ mesh:p, mat:pm, active:false });
+  }
+})();
+
+function getPoolMesh() {
+  for (var i=0; i<pool.length; i++) {
+    if (!pool[i].active) { pool[i].active=true; return pool[i]; }
+  }
+  return null;
+}
+
+// Emitted X-ray lines (for bremsstrahlung fan)
+var xrayLines = [];
+var XRAY_LINE_POOL = [];
+(function() {
+  for (var i=0; i<60; i++) {
+    var lg = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0,0,0),new THREE.Vector3(0,0,0)]);
+    var lm = new THREE.LineBasicMaterial({ color:0x00ff99, transparent:true, opacity:0 });
+    var ll = new THREE.Line(lg, lm);
+    scene.add(ll);
+    XRAY_LINE_POOL.push({ line:ll, mat:lm, geo:lg, active:false });
+  }
+})();
+
+function getLineMesh() {
+  for (var i=0; i<XRAY_LINE_POOL.length; i++) {
+    if (!XRAY_LINE_POOL[i].active) { XRAY_LINE_POOL[i].active=true; return XRAY_LINE_POOL[i]; }
+  }
+  return null;
+}
+
+// ============================================================
+//  SPECTRUM CANVAS
+// ============================================================
+var scvs = document.getElementById('spec-canvas');
+var sctx = scvs.getContext('2d');
+var specBins = new Array(186).fill(0);
+var specPeakK  = 0; // characteristic K-alpha peak bin
+var specPeakL  = 0;
+
+function updateSpectrumPeak() {
+  // Duane-Hunt minimum wavelength
+  var lambdaMin_pm = 1240 / VOLTAGE; // keV → pm approx (1240/kV * 1000/1000)
+  // Map energy (keV) axis: 0..VOLTAGE keV → 0..186 px
+  // K-alpha for W = 58 keV
+  var EKa = 58.0;
+  specPeakK = Math.round((EKa / VOLTAGE) * 186);
+  specPeakK = Math.min(183, Math.max(3, specPeakK));
+  // L line ~ 8.4 keV
+  var ELa = 8.4;
+  specPeakL = Math.round((ELa / VOLTAGE) * 186);
+  specPeakL = Math.min(183, Math.max(3, specPeakL));
+}
+updateSpectrumPeak();
+
+function drawSpectrum() {
+  var W=186, H=110;
+  sctx.clearRect(0,0,W,H);
+  sctx.fillStyle='#080c1e';
+  sctx.fillRect(0,0,W,H);
+
+  // Axes
+  sctx.strokeStyle='#2a4060'; sctx.lineWidth=1;
+  sctx.beginPath(); sctx.moveTo(22,5); sctx.lineTo(22,92); sctx.lineTo(W-4,92); sctx.stroke();
+
+  // Bremsstrahlung continuum
+  if (MODE !== 'char') {
+    // Kramers' law approximation
+    var lmBin = Math.round((1 / VOLTAGE) * 186 * 10); // scaled
+    lmBin = Math.max(2, Math.min(30, Math.round(186*(1240/(VOLTAGE*1000)/0.05)))); 
+    // simpler: cutoff at bin = 186*(1/VOLTAGE normalized)
+    // E-axis: 0..VOLTAGE, bin 0=0keV, bin 185=VOLTAGE keV
+    // lambda_min at VOLTAGE keV
+    var cutBin = 185; // rightmost always = VOLTAGE keV → lambda_min
+
+    var grd = sctx.createLinearGradient(22,0,W,0);
+    grd.addColorStop(0,'rgba(0,255,153,0)');
+    grd.addColorStop(0.4,'rgba(0,255,153,0.6)');
+    grd.addColorStop(1,'rgba(0,255,153,0.05)');
+
+    sctx.beginPath();
+    sctx.moveTo(22,92);
+    for (var b=0; b<=163; b++) {
+      var E = (b/163) * VOLTAGE; // keV
+      var I = 0;
+      if (E > 0.5) I = (VOLTAGE - E) / E; // Kramers approx
+      I = Math.min(I, 4);
+      var yy = 92 - I*18;
+      sctx.lineTo(22+b, yy);
+    }
+    sctx.lineTo(22+163,92);
+    sctx.closePath();
+    sctx.fillStyle = grd;
+    sctx.fill();
+    sctx.strokeStyle='rgba(0,255,153,0.7)'; sctx.lineWidth=1.3;
+    sctx.beginPath();
+    sctx.moveTo(22,92);
+    for (var b2=0; b2<=163; b2++) {
+      var E2=(b2/163)*VOLTAGE;
+      var I2=0;
+      if(E2>0.5) I2=(VOLTAGE-E2)/E2;
+      I2=Math.min(I2,4);
+      sctx.lineTo(22+b2, 92-I2*18);
+    }
+    sctx.stroke();
+  }
+
+  // Characteristic peaks
+  if (MODE !== 'brem' && VOLTAGE >= 69.5) {
+    // Kα peak
+    sctx.strokeStyle='#ff8c00'; sctx.lineWidth=2;
+    sctx.beginPath();
+    sctx.moveTo(22+specPeakK, 92);
+    sctx.lineTo(22+specPeakK, 92-65);
+    sctx.stroke();
+    sctx.fillStyle='#ff8c00';
+    sctx.font='7px Orbitron,monospace';
+    sctx.textAlign='center';
+    sctx.fillText('Kα', 22+specPeakK, 92-68);
+  }
+  if (MODE !== 'brem') {
+    // Lα peak (lower energy, always present if V>11.5kV)
+    if (VOLTAGE >= 11.5 && specPeakL < 160) {
+      sctx.strokeStyle='#ffcc00'; sctx.lineWidth=1.5;
+      sctx.beginPath();
+      sctx.moveTo(22+specPeakL, 92);
+      sctx.lineTo(22+specPeakL, 92-40);
+      sctx.stroke();
+      sctx.fillStyle='#ffcc00';
+      sctx.font='7px Orbitron,monospace';
+      sctx.textAlign='center';
+      sctx.fillText('Lα', 22+specPeakL, 92-43);
+    }
+  }
+
+  // Labels
+  sctx.fillStyle='#4a9eff88'; sctx.font='7px Orbitron,monospace';
+  sctx.textAlign='center';
+  sctx.fillText('0', 22, 100);
+  sctx.fillText(Math.round(VOLTAGE/2)+'keV', 22+82, 100);
+  sctx.fillText(VOLTAGE+'keV', 22+163, 100);
+  sctx.save(); sctx.translate(10,70); sctx.rotate(-Math.PI/2);
+  sctx.textAlign='center'; sctx.fillText('Şiddet', 0, 0);
+  sctx.restore();
+  sctx.textAlign='left';
+  sctx.fillText('Enerji →', 130, 108);
+}
+
+// ============================================================
+//  PARTICLE SPAWNING
+// ============================================================
+var spawnTimer=0, spawnInterval=18;
+var charTimer=0,  charInterval=90;
+
+function spawnElectron() {
+  // Incoming electron: cathode (-6.5,0,0) → anode (4.5,0,0)
+  var p = {
+    type: 'electron_in',
+    x: -6.0, y: (Math.random()-0.5)*0.4, z: (Math.random()-0.5)*0.4,
+    vx: 0.18 + (SPD-1)*0.03, vy:0, vz:0,
+    life:1.0, dlife:0.008,
+    color:0x44aaff, size:0.09,
+    mesh:null
+  };
+  particles.push(p);
+}
+
+function spawnBremsstrahlung(fromX, fromY, fromZ) {
+  if (MODE === 'char') return;
+  // Fan of X-ray photons downward (toward window)
+  var nRays = 2 + Math.floor(Math.random()*3);
+  for (var i=0; i<nRays; i++) {
+    var ang = -Math.PI/2 + (Math.random()-0.5)*1.2;
+    var lobj = getLineMesh();
+    if (!lobj) continue;
+    var speed = 0.22 + Math.random()*0.1;
+    xrayLines.push({
+      lobj:lobj,
+      x0:fromX, y0:fromY, z0:fromZ,
+      vx: Math.cos(ang)*0.15 + (Math.random()-0.5)*0.08,
+      vy: -Math.abs(Math.sin(ang))*speed,
+      vz: (Math.random()-0.5)*0.08,
+      len:0, maxLen:3.5+Math.random()*2,
+      life:1.0,
+      color:'#00ff99'
+    });
+    lobj.mat.color.setStyle('#00ff99');
+    lobj.mat.opacity = 0.8;
+  }
+  // Update info
+  var ke = VOLTAGE * 0.3 + Math.random()*(VOLTAGE*0.7);
+  var lam_pm = 1240 / ke;
+  setInfo('Bremsstrahlung', ke.toFixed(1)+' keV', (ke*0.3+Math.random()*ke*0.5).toFixed(1)+' keV', lam_pm.toFixed(2)+' pm');
+}
+
+function spawnCharacteristic(fromX,fromY,fromZ) {
+  if (MODE === 'brem') return;
+  if (VOLTAGE < 69.5) return; // not enough energy
+
+  // 1. Eject inner K-shell electron (red)
+  var ej = {
+    type:'ejected',
+    x:fromX, y:fromY, z:fromZ,
+    vx:(Math.random()-0.5)*0.15,
+    vy: 0.12+Math.random()*0.08,
+    vz:(Math.random()-0.5)*0.15,
+    life:1.0, dlife:0.025,
+    color:0xff4444, size:0.08, mesh:null
+  };
+  particles.push(ej);
+
+  // 2. After short delay, emit characteristic X-ray (orange line)
+  setTimeout(function() {
+    var lobj2 = getLineMesh();
+    if (!lobj2) return;
+    xrayLines.push({
+      lobj:lobj2,
+      x0:fromX, y0:fromY-0.5, z0:fromZ,
+      vx:(Math.random()-0.5)*0.05,
+      vy:-0.25,
+      vz:(Math.random()-0.5)*0.05,
+      len:0, maxLen:4+Math.random(),
+      life:1.0,
+      color:'#ff8c00'
+    });
+    lobj2.mat.color.setStyle('#ff8c00');
+    lobj2.mat.opacity = 1.0;
+    setInfo('Karakteristik Kα', VOLTAGE.toFixed(0)+' keV', '58.0 keV', '21.4 pm');
+  }, 300);
+}
+
+// ============================================================
+//  INFO UPDATE
+// ============================================================
+function setInfo(type, ke, xen, wl) {
+  document.getElementById('ev-type').textContent = type;
+  document.getElementById('ev-ke').textContent   = ke;
+  document.getElementById('ev-xray').textContent = xen;
+  document.getElementById('ev-wl').textContent   = wl;
+}
+
+// ============================================================
+//  CONTROLS
+// ============================================================
+function setMode(m) {
+  MODE = m;
+  document.querySelectorAll('.mbtn').forEach(function(b){ b.classList.remove('active'); });
+  document.querySelector('.m-'+m).classList.add('active');
+}
+function onVoltage(v) {
+  VOLTAGE = parseInt(v);
+  document.getElementById('lbl-V').textContent = v+' kV';
+  updateSpectrumPeak();
+}
+function onSpeed(v) {
+  SPD = parseInt(v);
+  var labels = ['','Çok Yavaş','Yavaş','Orta','Hızlı','Çok Hızlı'];
+  document.getElementById('lbl-spd').textContent = labels[SPD]||'Orta';
+  spawnInterval = Math.max(6, 24 - SPD*4);
+}
+
+// ============================================================
+//  ANIMATION LOOP
+// ============================================================
+function animate() {
+  requestAnimationFrame(animate);
+  frame++;
+
+  // Camera
+  var cx2 = camR*Math.cos(camTheta)*Math.cos(camPhi);
+  var cy2 = camR*Math.sin(camPhi);
+  var cz2 = camR*Math.sin(camTheta)*Math.cos(camPhi);
+  camera.position.set(cx2, cy2, cz2);
+  camera.lookAt(0,0,0);
+
+  // Filament pulse
+  TUBE.fLight.intensity = 1.2 + 0.4*Math.sin(frame*0.12);
+
+  // Nucleus pulse
+  var np = 1 + 0.05*Math.sin(frame*0.07);
+  nucleus.scale.set(np,np,np);
+
+  // Shell electrons orbit
+  var speeds = { K:0.032, L:0.018, M:0.011 };
+  for (var sh in shellElectrons) {
+    eAngles[sh] += speeds[sh];
+    var sr = SHELL_R[sh];
+    shellElectrons[sh].position.set(
+      Math.cos(eAngles[sh])*sr, 0, Math.sin(eAngles[sh])*sr
+    );
+    shellMeshes[sh].mat.opacity = 0.3 + 0.15*Math.abs(Math.sin(frame*0.04));
+  }
+
+  // Atom slow rotation
+  atomG.rotation.y += 0.003;
+
+  // Spawn electrons
+  spawnTimer++;
+  if (spawnTimer >= spawnInterval) {
+    spawnTimer = 0;
+    spawnElectron();
+  }
+
+  // Characteristic events
+  charTimer++;
+  var charInt = (MODE==='char') ? 60 : (MODE==='both' ? 90 : 9999);
+  if (charTimer >= charInt) {
+    charTimer = 0;
+    spawnCharacteristic(4.5, 0, 0);
+  }
+
+  // Update particles
+  for (var i=particles.length-1; i>=0; i--) {
+    var p=particles[i];
+    p.x+=p.vx; p.y+=p.vy; p.z+=p.vz;
+    p.life -= p.dlife;
+
+    // Electron hits anode → bremsstrahlung
+    if (p.type==='electron_in' && p.x >= 4.0 && !p.hit) {
+      p.hit=true;
+      p.color = 0xffaa44; p.type='electron_slow';
+      p.vx *= 0.15; p.vy = (Math.random()-0.5)*0.06; p.vz=(Math.random()-0.5)*0.06;
+      p.dlife = 0.04;
+      if (p.mesh) p.mesh.mat.color.setHex(0xffaa44);
+      spawnBremsstrahlung(4.0, p.y, p.z);
+    }
+
+    if (!p.mesh) {
+      var pm2 = getPoolMesh();
+      if (pm2) { p.mesh = pm2; }
+    }
+    if (p.mesh) {
+      p.mesh.mesh.position.set(p.x, p.y, p.z);
+      p.mesh.mat.color.setHex(p.color);
+      p.mesh.mat.opacity = Math.max(0, p.life) * 0.9;
+      var sc = p.size / 0.08;
+      p.mesh.mesh.scale.set(sc,sc,sc);
+    }
+
+    if (p.life <= 0) {
+      if (p.mesh) { p.mesh.active=false; p.mesh.mat.opacity=0; }
+      particles.splice(i,1);
+    }
+  }
+
+  // Update X-ray lines
+  for (var j=xrayLines.length-1; j>=0; j--) {
+    var xl=xrayLines[j];
+    xl.len += 0.18;
+    xl.life -= 0.012;
+    var ex2=xl.x0+xl.vx*xl.len/0.18, ey2=xl.y0+xl.vy*xl.len/0.18, ez2=xl.z0+xl.vz*xl.len/0.18;
+    // Update geometry
+    var pos2 = xl.lobj.geo.attributes.position;
+    if (pos2) {
+      pos2.setXYZ(0, xl.x0, xl.y0, xl.z0);
+      pos2.setXYZ(1, ex2, ey2, ez2);
+      pos2.needsUpdate=true;
+    } else {
+      // rebuild
+      var pts2=[new THREE.Vector3(xl.x0,xl.y0,xl.z0),new THREE.Vector3(ex2,ey2,ez2)];
+      xl.lobj.geo.setFromPoints(pts2);
+    }
+    xl.lobj.mat.opacity = Math.max(0, xl.life)*0.9;
+
+    if (xl.len >= xl.maxLen || xl.life <= 0) {
+      xl.lobj.mat.opacity = 0;
+      xl.lobj.active = false;
+      // reset geometry
+      var pts3=[new THREE.Vector3(0,0,0),new THREE.Vector3(0,0,0)];
+      xl.lobj.geo.setFromPoints(pts3);
+      xrayLines.splice(j,1);
+    }
+  }
+
+  drawSpectrum();
+  renderer.render(scene, camera);
+}
+
+// Spectrum canvas size
+scvs.width  = document.getElementById('spec-panel').clientWidth - 24;
+scvs.height = 110;
+
+animate();
+</script>
+</body>
+</html>
